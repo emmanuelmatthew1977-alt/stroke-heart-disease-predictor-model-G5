@@ -31,26 +31,37 @@ with st.sidebar:
 
 # Prediction
 if st.button("Predict Risk"):
-    # ... (your input_data creation and engineering code remains the same) ...
+    # ... (your input_data creation code) ...
 
-    # Predict class (0 or 1)
-    prediction = model.predict(input_data)[0]
+    # Safe type conversion & fill
+    cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status', 
+                'age_group', 'glucose_group', 'bmi_group']
+    for col in cat_cols:
+        if col in input_data.columns:
+            input_data[col] = input_data[col].astype(str).fillna('unknown')
 
-    # Get decision score safely (flatten if needed)
-    scores = model.decision_function(input_data)
-    score = scores.item() if scores.ndim == 1 else scores[0, 0] if scores.shape[1] == 1 else scores[0]
+    # Debug print (remove after testing)
+    st.write("Input data columns:", input_data.columns.tolist())
+    st.write("Input data types:", input_data.dtypes.to_dict())
 
-    # Show result
-    if prediction == 1:
-        st.error(f"**HIGH RISK** (Decision score: {score:.2f})")
-        st.write("This patient may have heart disease, stroke, or both. Recommend immediate medical consultation.")
-    else:
-        st.success(f"**Low Risk** (Decision score: {score:.2f})")
-        st.write("Low likelihood of heart disease or stroke based on the model.")
+    try:
+        prediction = model.predict(input_data)[0]
+        score = model.decision_function(input_data)[0]
 
-    # Optional: patient summary
-    st.subheader("Patient Summary Used")
-    st.table(input_data.T.rename(columns={0: "Value"}))
+        if prediction == 1:
+            st.error(f"**HIGH RISK** (score: {score:.2f})")
+            st.write("Patient may have heart disease, stroke, or both. Consult a doctor.")
+        else:
+            st.success(f"**Low Risk** (score: {score:.2f})")
+            st.write("Low likelihood based on the model.")
+
+        st.subheader("Patient Summary")
+        st.table(input_data.T.rename(columns={0: "Value"}))
+    except Exception as e:
+        st.error(f"Prediction failed: {str(e)}")
+        st.write("Check column names, types, and model expectations.")
+
+ 
 
     # Compute engineered features manually
     if age <= 18: input_data['age_group'] = 'child'
@@ -107,3 +118,4 @@ st.markdown(
     unsafe_allow_html=True
 
 )
+

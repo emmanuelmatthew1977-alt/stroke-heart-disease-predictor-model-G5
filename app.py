@@ -31,35 +31,97 @@ with st.sidebar:
 
 # Prediction
 if st.button("Predict Risk"):
-    # ... (your input_data creation code) ...
+    # Debug: Show all input values first
+    st.write("Debug: Raw inputs received")
+    st.write(f"Gender: {gender}")
+    st.write(f"Age: {age}")
+    st.write(f"Hypertension: {hypertension}")
+    st.write(f"Ever Married: {ever_married}")
+    st.write(f"Work Type: {work_type}")
+    st.write(f"Residence Type: {residence_type}")
+    st.write(f"Avg Glucose: {avg_glucose_level}")
+    st.write(f"BMI: {bmi}")
+    st.write(f"Smoking Status: {smoking_status}")
 
-    # Safe type conversion & fill
-    cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status', 
-                'age_group', 'glucose_group', 'bmi_group']
-    for col in cat_cols:
-        if col in input_data.columns:
-            input_data[col] = input_data[col].astype(str).fillna('unknown')
-
-    # Debug print (remove after testing)
-    st.write("Input data columns:", input_data.columns.tolist())
-    st.write("Input data types:", input_data.dtypes.to_dict())
-
+    # Create DataFrame safely
     try:
+        input_data = pd.DataFrame({
+            'gender': [gender],
+            'age': [age],
+            'hypertension': [hypertension],
+            'ever_married': [ever_married],
+            'work_type': [work_type],
+            'Residence_type': [residence_type],
+            'avg_glucose_level': [avg_glucose_level],
+            'bmi': [bmi],
+            'smoking_status': [smoking_status],
+            'age_group': ['middle_age'],  # temporary default
+            'glucose_group': ['normal'],
+            'bmi_group': ['normal']
+        })
+
+        st.write("Debug: DataFrame created successfully")
+        st.write("Columns:", input_data.columns.tolist())
+        st.write("Shape:", input_data.shape)
+        st.write("Data types:\n", input_data.dtypes)
+
+        # Safe type conversion
+        cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status',
+                    'age_group', 'glucose_group', 'bmi_group']
+        for col in cat_cols:
+            if col in input_data.columns:
+                input_data[col] = input_data[col].astype(str).fillna('unknown')
+
+        # Manual engineering (safer version)
+        if age <= 18:
+            input_data['age_group'] = 'child'
+        elif age <= 40:
+            input_data['age_group'] = 'young_adult'
+        elif age <= 60:
+            input_data['age_group'] = 'middle_age'
+        else:
+            input_data['age_group'] = 'senior'
+
+        if avg_glucose_level <= 100:
+            input_data['glucose_group'] = 'normal'
+        elif avg_glucose_level <= 126:
+            input_data['glucose_group'] = 'prediabetes'
+        elif avg_glucose_level <= 200:
+            input_data['glucose_group'] = 'diabetes'
+        else:
+            input_data['glucose_group'] = 'high'
+
+        if bmi < 18.5:
+            input_data['bmi_group'] = 'underweight'
+        elif bmi < 25:
+            input_data['bmi_group'] = 'normal'
+        elif bmi < 30:
+            input_data['bmi_group'] = 'overweight'
+        else:
+            input_data['bmi_group'] = 'obese'
+
+        # Final type safety
+        for col in cat_cols:
+            input_data[col] = input_data[col].astype(str)
+
+        # Predict
         prediction = model.predict(input_data)[0]
         score = model.decision_function(input_data)[0]
 
+        # Show result
         if prediction == 1:
-            st.error(f"**HIGH RISK** (score: {score:.2f})")
-            st.write("Patient may have heart disease, stroke, or both. Consult a doctor.")
+            st.error(f"**HIGH RISK** (Decision score: {score:.2f})")
+            st.write("Patient may have heart disease, stroke, or both. Recommend immediate consultation.")
         else:
-            st.success(f"**Low Risk** (score: {score:.2f})")
+            st.success(f"**Low Risk** (Decision score: {score:.2f})")
             st.write("Low likelihood based on the model.")
 
         st.subheader("Patient Summary")
         st.table(input_data.T.rename(columns={0: "Value"}))
+
     except Exception as e:
-        st.error(f"Prediction failed: {str(e)}")
-        st.write("Check column names, types, and model expectations.")
+        st.error(f"Error during prediction: {str(e)}")
+        st.write("Check if all inputs are filled correctly and model file is in the same folder.")
 
  
 
@@ -118,4 +180,5 @@ st.markdown(
     unsafe_allow_html=True
 
 )
+
 

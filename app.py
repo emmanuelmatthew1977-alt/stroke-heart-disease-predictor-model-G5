@@ -31,20 +31,26 @@ with st.sidebar:
 
 # Prediction
 if st.button("Predict Risk"):
-    input_data = pd.DataFrame({
-        'gender': [gender],
-        'age': [age],
-        'hypertension': [hypertension],
-        'ever_married': [ever_married],
-        'work_type': [work_type],
-        'Residence_type': [residence_type],
-        'avg_glucose_level': [avg_glucose_level],
-        'bmi': [bmi],
-        'smoking_status': [smoking_status],
-        'age_group': ['middle_age'],
-        'glucose_group': ['normal'],
-        'bmi_group': ['normal']
-    })
+    # ... (your input_data creation and engineering code remains the same) ...
+
+    # Predict class (0 or 1)
+    prediction = model.predict(input_data)[0]
+
+    # Get decision score safely (flatten if needed)
+    scores = model.decision_function(input_data)
+    score = scores.item() if scores.ndim == 1 else scores[0, 0] if scores.shape[1] == 1 else scores[0]
+
+    # Show result
+    if prediction == 1:
+        st.error(f"**HIGH RISK** (Decision score: {score:.2f})")
+        st.write("This patient may have heart disease, stroke, or both. Recommend immediate medical consultation.")
+    else:
+        st.success(f"**Low Risk** (Decision score: {score:.2f})")
+        st.write("Low likelihood of heart disease or stroke based on the model.")
+
+    # Optional: patient summary
+    st.subheader("Patient Summary Used")
+    st.table(input_data.T.rename(columns={0: "Value"}))
 
     # Compute engineered features manually
     if age <= 18: input_data['age_group'] = 'child'
@@ -99,4 +105,5 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
+
 )
